@@ -6,7 +6,6 @@ project(boxlocator)
 ## is used, also find other catkin packages
 find_package(catkin REQUIRED COMPONENTS
   nav_msgs
-  opencv
   rospy
   std_msgs
 )

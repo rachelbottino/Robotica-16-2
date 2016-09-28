@@ -1,0 +1,8 @@
+prefix=/home/borg/Robotica-16-2/devel
+
+Name: boxlocator
+Description: Description of boxlocator
+Version: 0.0.0
+Cflags: 
+Libs: -L/home/borg/Robotica-16-2/devel/lib 
+Requires: 
