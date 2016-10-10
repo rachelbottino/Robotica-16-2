@@ -5,6 +5,7 @@ import rospy
 import tf
 import math
 import cv2
+import time
 from geometry_msgs.msg import Twist, Vector3, Pose
 from nav_msgs.msg import Odometry
 from sensor_msgs.msg import Image
@@ -15,6 +16,7 @@ bridge = CvBridge()
 cv_image = None
 media = []
 centro = []
+atraso = 1.5
 
 def processa(dado):
 	global media
@@ -28,7 +30,7 @@ def processa(dado):
 
 	x_m = 0
 	y_m = 0
-	total = 0
+	total = 1
 
 	for i in range(frame_rg.shape[0]):
 	    for j in range(frame_rg.shape[1]):
@@ -53,16 +55,22 @@ def recebe(imagem):
 	now = rospy.get_rostime()
 	imgtime = imagem.header.stamp
 	lag = now-imgtime
-	print(lag.secs)
+	delay = (lag.secs+lag.nsecs/1000000000.0)
+	if delay > atraso:
+		return 
+	print("DELAY", delay)
 	try:
-		print("img recebida")
+		#print("img recebida")
+		antes = time.clock()
 		cv_image = bridge.imgmsg_to_cv2(imagem, "bgr8")
 		cv2.imshow("video", cv_image)
 		cv2.waitKey(1)
 		processa(cv_image)
+		depois = time.clock()
+		print ("TEMPO", depois-antes)
 	except CvBridgeError as e:
 		print(e)
-
+	
 
 
 if __name__=="__main__":
@@ -78,25 +86,24 @@ if __name__=="__main__":
 	try:
 
 		while not rospy.is_shutdown():
-			print (media)
-			print (centro)
+			#print (media)
+			#print (centro)
 			vel = Twist(Vector3(0,0,0), Vector3(0,0,0))
 			if len(media) != 0 and len(centro) != 0:
 				dif_x = media[0]-centro[0]
 				dif_y = media[1]-centro[1]
-				if math.fabs(dif_x)<15 and math.fabs(dif_y)<50:
-					vel = Twist(Vector3(0.2,0,0), Vector3(0,0,0))
+				if math.fabs(dif_x)<30: #and math.fabs(dif_y)<50:
+					vel = Twist(Vector3(0.5,0,0), Vector3(0,0,0))
 				else:
 					if dif_x > 0:
 						# Vira a direita
-						vel = Twist(Vector3(0,0,0), Vector3(0,0,-0.1))
+						vel = Twist(Vector3(0,0,0), Vector3(0,0,-0.2))
 					else:
 						# Vira a esquerda
-						vel = Twist(Vector3(0,0,0), Vector3(0,0,0.1))
+						vel = Twist(Vector3(0,0,0), Vector3(0,0,0.2))
 
 			velocidade_saida.publish(vel)
 			rospy.sleep(0.1)
-			print("OI")
 
 	except rospy.ROSInterruptException:
 	    print("Ocorreu uma exceção com o rospy")
