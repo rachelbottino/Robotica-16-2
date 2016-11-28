@@ -2,6 +2,7 @@
 
 import roslib
 import rospy
+import sys
 import smach
 import smach_ros
 import rospy
@@ -22,10 +23,11 @@ x = 0
 y = 0
 z = 100
 id = 0
-ang = -50
+ang = -500
 x_desejado = 0.12
 y_desejado = 0.10
 z_desejado = 1.00
+tfl = 0
 
 buffer = tf2_ros.Buffer()
 
@@ -38,16 +40,25 @@ def recebe(msg):
         x = round(marker.pose.pose.position.x, 2)
         y = round(marker.pose.pose.position.y, 2)
         z = round(marker.pose.pose.position.z, 2)
-        header = Header(frame_id= "ar_marker_100")
-        trans = buffer.lookup_transform("base_link", "ar_marker_100", rospy.Time(0))
-        t = transformations.translation_matrix([trans.transform.translation.x, trans.transform.translation.y, trans.transform.translation.z])
-        r = transformations.quaternion_matrix([trans.transform.rotation.x, trans.transform.rotation.y, trans.transform.rotation.z, trans.transform.rotation.w])
-        m = numpy.dot(r,t)
-        v2 = numpy.dot(m,[0,0,1,0])
-        v2_n = v2[0:-1]
-        n2 = v2_n/linalg.norm(v2_n)
-        cosa = numpy.dot(n2,[1,0,0])
-        ang = math.degrees(math.acos(cosa))
+        if marker.id == 100:
+            header = Header(frame_id= "ar_marker_100")
+            print("id:", marker.id)
+            can_transf = buffer.can_transform("base_link", "ar_marker_100", rospy.Time(0))
+            print("can:",can_transf)
+            # if can_transf == False:
+            #     sys.exit(0)
+            # else:
+            #     print("Can Transf = True")
+            trans = buffer.lookup_transform("base_link", "ar_marker_100", rospy.Time(0))
+            t = transformations.translation_matrix([trans.transform.translation.x, trans.transform.translation.y, trans.transform.translation.z])
+            r = transformations.quaternion_matrix([trans.transform.rotation.x, trans.transform.rotation.y, trans.transform.rotation.z, trans.transform.rotation.w])
+            m = numpy.dot(r,t)
+            v2 = numpy.dot(m,[0,0,1,0])
+            v2_n = v2[0:-1]
+            n2 = v2_n/linalg.norm(v2_n)
+            cosa = numpy.dot(n2,[1,0,0])
+            ang = math.degrees(math.acos(cosa))
+            print ("angulo", ang)
 
 # define state Foo
 class Longe(smach.State):
@@ -85,8 +96,9 @@ class Girando(smach.State):
         smach.State.__init__(self, outcomes=['alinhou', 'alinhando'])
 
     def execute(self, userdata):
+        print ("angulo: ", ang)
         global velocidade_saida
-        if ang < 85:
+        if ang < 110:
             vel = Twist(Vector3(0, 0, 0), Vector3(0, 0, -0.1))
             velocidade_saida.publish(vel)
             return ('alinhando')
@@ -98,9 +110,11 @@ class Girando(smach.State):
 # main
 def main():
     global velocidade_saida
+    global buffer
     rospy.init_node('smach_example_state_machine')
     recebedor = rospy.Subscriber("/ar_pose_marker", AlvarMarkers, recebe)
     velocidade_saida = rospy.Publisher("/cmd_vel", Twist, queue_size = 1)
+    tfl = tf2_ros.TransformListener(buffer)
 
     # Create a SMACH state machine
     sm = smach.StateMachine(outcomes=['terminei'])
@@ -125,6 +139,7 @@ def main():
 
     # Execute SMACH plan
     outcome = sm.execute()
+    #rospy.spin()
 
 
 if __name__ == '__main__':

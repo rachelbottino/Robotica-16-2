@@ -40,10 +40,10 @@ def recebe(msg):
 		#print(x)
 		id = marker.id
 		#print(marker.pose.pose)
-		if id == 250:
-			print(buffer.can_transform("base_link", "ar_marker_250", rospy.Time(0)))
-			header = Header(frame_id= "ar_marker_250")
-			trans = buffer.lookup_transform("base_link", "ar_marker_250", rospy.Time(0))
+		if id == 100:
+			print(buffer.can_transform("base_link", "ar_marker_100", rospy.Time(0)))
+			header = Header(frame_id= "ar_marker_100")
+			trans = buffer.lookup_transform("base_link", "ar_marker_100", rospy.Time(0))
 			t = transformations.translation_matrix([trans.transform.translation.x, trans.transform.translation.y, trans.transform.translation.z])
 			r = transformations.quaternion_matrix([trans.transform.rotation.x, trans.transform.rotation.y, trans.transform.rotation.z, trans.transform.rotation.w])
 			m = numpy.dot(r,t)
